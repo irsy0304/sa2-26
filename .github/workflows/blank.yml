@@ -1,40 +1,35 @@
-name: Check remote host and report
+steps:
+  - name: Install netcat
+    run: sudo apt update && sudo apt install -y netcat curl
 
-on:
-  push:
-    branches:
-      - master
-      - second
+  - name: Диагностика сети
+    run: |
+      echo "=== Проверка DNS ==="
+      nslookup onliner.by || host onliner.by
+      echo "=== Проверка пинга (ICMP) ==="
+      ping -c 2 onliner.by || echo "Пинг не работает (это нормально для многих серверов)"
+      echo "=== Проверка порта 443 через nc ==="
+      nc -zv -w5 onliner.by 443 || echo "nc завершился с ошибкой"
+      echo "=== Проверка через curl ==="
+      curl -v --connect-timeout 5 https://onliner.by:443 || echo "curl завершился с ошибкой"
 
-jobs:
-  prepare:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install netcat
-        run: sudo apt update && sudo apt install -y netcat
-      
-      - name: Test connection to onliner.by
-        run: |
-          nc -zv -w2 onliner.by 443 > nc_report.log 2>&1
-          cat nc_report.log
-      
-      - name: Verify connection result
-        run: |
-          # Проверяем код выхода nc (более надёжный способ)
-          if nc -z -w2 onliner.by 443; then
-            echo "✅ Connection to onliner.by:443 successful"
-            echo "success" > result.txt
-          else
-            echo "❌ Connection to onliner.by:443 failed"
-            echo "failed" > result.txt
-            exit 1
-          fi
-      
-      - name: Upload report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: nc-report
-          path: |
-            nc_report.log
-            result.txt
+  - name: Проверка подключения (curl)
+    id: check
+    run: |
+      if curl -s --connect-timeout 5 https://onliner.by:443 > /dev/null; then
+        echo "✅ Подключение успешно"
+        echo "status=success" >> $GITHUB_OUTPUT
+      else
+        echo "❌ Не удалось подключиться"
+        echo "status=failed" >> $GITHUB_OUTPUT
+        exit 1
+      fi
+
+  - name: Загрузка отчёта
+    if: always()  # Загружает лог, даже если шаг проверки упал
+    uses: actions/upload-artifact@v4
+    with:
+      name: diagnostic-logs
+      path: |
+        /tmp/*.log
+        ./**/*.log
