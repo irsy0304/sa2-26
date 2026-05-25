@@ -6,22 +6,25 @@ on:
       - master
       - second
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # Отключает предупреждение о Node.js 20
+
 jobs:
   prepare:
     runs-on: ubuntu-latest
     steps:
       - name: Install netcat
-        run: sudo apt update && sudo apt install -y netcat
+        run: sudo apt update && sudo apt install -y netcat-openbsd curl
       
       - name: Test connection to onliner.by
         run: |
-          nc -zv -w2 onliner.by 443 > nc_report.log 2>&1
+          nc -zv -w5 onliner.by 443 > nc_report.log 2>&1
           cat nc_report.log
       
       - name: Verify connection result
         run: |
-          # Проверяем код выхода nc (более надёжный способ)
-          if nc -z -w2 onliner.by 443; then
+          # Проверяем код выхода nc (более надёжно)
+          if nc -z -w5 onliner.by 443; then
             echo "✅ Connection to onliner.by:443 successful"
             echo "success" > result.txt
           else
