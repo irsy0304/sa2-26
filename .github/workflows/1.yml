@@ -1,0 +1,40 @@
+name: Check remote host and report
+
+on:
+  push:
+    branches:
+      - master
+      - second
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install netcat
+        run: sudo apt update && sudo apt install -y netcat
+      
+      - name: Test connection to onliner.by
+        run: |
+          nc -zv -w2 onliner.by 443 > nc_report.log 2>&1
+          cat nc_report.log
+      
+      - name: Verify connection result
+        run: |
+          # Проверяем код выхода nc (более надёжный способ)
+          if nc -z -w2 onliner.by 443; then
+            echo "✅ Connection to onliner.by:443 successful"
+            echo "success" > result.txt
+          else
+            echo "❌ Connection to onliner.by:443 failed"
+            echo "failed" > result.txt
+            exit 1
+          fi
+      
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nc-report
+          path: |
+            nc_report.log
+            result.txt
