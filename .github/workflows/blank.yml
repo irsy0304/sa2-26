@@ -10,8 +10,8 @@ jobs:
   prepare:
     runs-on: ubuntu-latest  # или my_runner, если есть
     steps:
-      - name: Install netcat
-        run: sudo apt update && sudo apt install -y netcat
+      #- name: Install netcat
+      #  run: sudo apt update && sudo apt install -y netcat
       
       - name: Test connection to onliner.by
         run: |
