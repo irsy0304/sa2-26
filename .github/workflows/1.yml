@@ -1,4 +1,4 @@
-name: Check remote host and report
+name: dispatch remote host and report
 
 on:
   push:
